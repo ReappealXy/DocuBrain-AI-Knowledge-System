@@ -1,0 +1,40 @@
+## =======================================================
+##  TESTING CONFIGURATION - 只用于运行测试
+##  使用和你主配置完全一致的YAML格式和精确的模型名称
+## =======================================================
+#spring:
+#  # 添加数据源配置
+#  datasource:
+#    driver-class-name: com.mysql.cj.jdbc.Driver
+#    # 注意：这里最好连接一个测试专用的数据库，而不是你的生产数据库
+#    url: jdbc:mysql://localhost:3306/docubrain_db_test?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+#    username: root
+#    password: 230320
+#  data:
+#    redis:
+#      host: localhost
+#      port: 6379
+#
+#  # Spring AI 配置
+#  ai:
+#    openai:
+#      api-key: sk-6GY0M9ODKParUyy4Xs6Tx110jzppcIUz2DZbTWMlPFTmqm7I
+#      base-url: https://hk.xty.app
+#
+#      chat:
+#        enabled: true
+#        options:
+#          model: gpt-3.5-turbo
+#          temperature: 1.0
+#
+#      embedding:
+#        enabled: true
+#
+#        options:
+#          model: text-embedding-3-small
+#
+#    # Redis 向量存储配置
+#    vectorstore:
+#      redis:
+#        # 自动初始化向量索引
+#        initialize-schema: true

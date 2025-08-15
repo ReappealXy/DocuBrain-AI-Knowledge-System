@@ -1,0 +1,85 @@
+# Spring Boot 应用配置
+spring:
+  application:
+    name: DocuBrain # 应用名称
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/docubrain_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:your_password}
+
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+  # Spring AI 配置
+  ai:
+    # Open API 配置
+    openai:
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      api-key: ${OPENAI_API_KEY:your_openai_api_key}
+      chat:
+        enabled: true
+        options:
+          model: gpt-3.5-turbo
+          temperature: 1.0
+
+
+      # --- 嵌入模型配置 (使用 OpenAI 模型) ---
+      # 嵌入(Embedding)功能是将文本转换为能捕捉其语义的数字向量。
+      # 这是向量数据库进行相似性搜索的基础。
+      embedding:
+        enabled: true
+        options:
+          model: text-embedding-3-small
+
+    # Redis 向量存储配置 (与 spring-ai-starter-vector-store-redis 对应)
+    vectorstore:
+      redis:
+        initialize-schema: true  # 自动初始化Redis索引，解决custom-index不存在的问题
+        index-name: custom-index
+        prefix: spring_ai_vector # 在 Redis 中存储向量数据的 Key 前缀
+        dimension: 1536 # text-embedding-3-small模型的向量维度是1536，不是1024
+        # field-name-content: content # 存储内容字段的名称
+        # field-name-embedding: embedding # 存储 embedding 字段的名称
+        # field-name-metadata: metadata # 存储元数据字段的名称
+
+
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: xin.rexy.docubrain.entity
+
+# Knife4j (API 文档工具) 配置
+knife4j:
+  # 全局基础设置
+  setting:
+    language: zh_CN # API 文档语言设置为中文
+
+  # --- 新增部分：开启扩展属性并修改策略 ---
+  # 开启 OpenAPI 扩展属性，允许我们进行更深度的自定义
+  enable-openapi-extension-props: true
+  # 扩展属性具体配置
+  extension-props:
+    # 将 schema (实体模型) 示例 JSON 的字段名生成策略，
+    # 从默认的“使用description描述”改为“使用name属性名”。
+    # 这能确保生成的调试 JSON 与后端 Java 实体类的字段名完全匹配。
+    schema-key-template-strategy-class: "com.github.xiaoymin.knife4j.core.conf.spi.impl.OpenApiExtensionResolverNameImpl"
+
+  openapi:
+    title: DocuBrain 智能知识库问答系统 API 文档
+    version: 1.0
+    contact:
+      name: Rexy Xin
+      url: https://rexy.xin
+      email: reappealxy@gmail.com
+    group:
+      default:
+        groupName: default
+        api-base-package: xin.rexy.docubrain.controller

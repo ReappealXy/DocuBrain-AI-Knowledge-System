@@ -1,0 +1,70 @@
+# DocuBrain 配置示例文件
+# 复制此文件为 application-local.yml 并填入你的实际配置
+
+# Spring Boot 应用配置
+spring:
+  application:
+    name: DocuBrain # 应用名称
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/docubrain_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+    username: root  # 你的数据库用户名
+    password: your_password  # 你的数据库密码
+
+  data:
+    redis:
+      host: localhost  # Redis 主机地址
+      port: 6379      # Redis 端口
+
+  # Spring AI 配置
+  ai:
+    # Open API 配置
+    openai:
+      base-url: https://api.openai.com  # OpenAI API 地址，如果使用代理请修改
+      api-key: your_openai_api_key      # 你的 OpenAI API 密钥
+      chat:
+        enabled: true
+        options:
+          model: gpt-3.5-turbo
+          temperature: 1.0
+
+      # --- 嵌入模型配置 (使用 OpenAI 模型) ---
+      embedding:
+        enabled: true
+        options:
+          model: text-embedding-3-small
+
+    # Redis 向量存储配置
+    vectorstore:
+      redis:
+        initialize-schema: true
+        index-name: custom-index
+        prefix: spring_ai_vector
+        dimension: 1536
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: xin.rexy.docubrain.entity
+
+# Knife4j (API 文档工具) 配置
+knife4j:
+  setting:
+    language: zh_CN
+  enable-openapi-extension-props: true
+  extension-props:
+    schema-key-template-strategy-class: "com.github.xiaoymin.knife4j.core.conf.spi.impl.OpenApiExtensionResolverNameImpl"
+  openapi:
+    title: DocuBrain 智能知识库问答系统 API 文档
+    version: 1.0
+    contact:
+      name: Your Name
+      url: https://your-website.com
+      email: your-email@example.com
+    group:
+      default:
+        groupName: default
+        api-base-package: xin.rexy.docubrain.controller

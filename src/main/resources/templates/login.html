@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - DocuBrain</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            animation: slideUp 0.6s ease-out;
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .brand-logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .brand-logo i {
+            font-size: 3rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .brand-title {
+            font-size: 2rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-top: 10px;
+        }
+        .form-floating {
+            margin-bottom: 20px;
+        }
+        .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .btn-login {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 15px;
+            padding: 15px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        .divider {
+            text-align: center;
+            margin: 25px 0;
+            position: relative;
+        }
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #dee2e6;
+        }
+        .divider span {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 0 15px;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .register-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        .register-link a:hover {
+            color: #764ba2;
+        }
+        .alert {
+            border-radius: 15px;
+            border: none;
+            margin-bottom: 20px;
+        }
+        .remember-forgot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            font-size: 0.9rem;
+        }
+        .remember-forgot a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .remember-forgot a:hover {
+            color: #764ba2;
+        }
+        .form-check-input:checked {
+            background-color: #667eea;
+            border-color: #667eea;
+        }
+        .loading {
+            display: none;
+        }
+        .btn-login:disabled {
+            background: #6c757d;
+            transform: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <!-- 品牌标识 -->
+        <div class="brand-logo">
+            <i class="fas fa-brain"></i>
+            <div class="brand-title">DocuBrain</div>
+            <p class="text-muted mt-2">智能知识库问答系统</p>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="errorAlert" class="alert alert-danger" style="display: none;">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <span id="errorMessage"></span>
+        </div>
+
+        <!-- 成功提示 -->
+        <div id="successAlert" class="alert alert-success" style="display: none;">
+            <i class="fas fa-check-circle me-2"></i>
+            <span id="successMessage"></span>
+        </div>
+
+        <!-- 登录表单 -->
+        <form id="loginForm">
+            <div class="form-floating">
+                <input type="text" class="form-control" id="username" name="username" placeholder="用户名" required>
+                <label for="username"><i class="fas fa-user me-2"></i>用户名</label>
+            </div>
+
+            <div class="form-floating">
+                <input type="password" class="form-control" id="password" name="password" placeholder="密码" required>
+                <label for="password"><i class="fas fa-lock me-2"></i>密码</label>
+            </div>
+
+            <div class="remember-forgot">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="rememberMe" name="rememberMe">
+                    <label class="form-check-label" for="rememberMe">
+                        记住我
+                    </label>
+                </div>
+                <a href="#" onclick="showForgotPassword()">忘记密码？</a>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-login">
+                <span class="normal-text">
+                    <i class="fas fa-sign-in-alt me-2"></i>登录
+                </span>
+                <span class="loading">
+                    <i class="fas fa-spinner fa-spin me-2"></i>登录中...
+                </span>
+            </button>
+        </form>
+
+        <!-- 分割线 -->
+        <div class="divider">
+            <span>或者</span>
+        </div>
+
+        <!-- 注册链接 -->
+        <div class="register-link">
+            <p class="mb-0">还没有账户？ <a href="/register">立即注册</a></p>
+        </div>
+
+        <!-- 返回首页 -->
+        <div class="text-center mt-3">
+            <a href="/" class="text-muted text-decoration-none">
+                <i class="fas fa-home me-1"></i>返回首页
+            </a>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // 表单提交处理
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const loginData = {
+                username: formData.get('username'),
+                password: formData.get('password'),
+                rememberMe: formData.get('rememberMe') === 'on'
+            };
+            
+            // 显示加载状态
+            showLoading(true);
+            hideAlerts();
+            
+            // 发送登录请求
+            fetch('/api/users/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(loginData)
+            })
+            .then(response => response.json())
+            .then(result => {
+                showLoading(false);
+                
+                if (result.code === 200) {
+                    showSuccess('登录成功！正在跳转...');
+                    
+                    // 保存用户信息到localStorage
+                    if (result.data) {
+                        localStorage.setItem('userInfo', JSON.stringify(result.data));
+                    }
+                    
+                    // 延迟跳转
+                    setTimeout(() => {
+                        const returnUrl = new URLSearchParams(window.location.search).get('returnUrl');
+                        window.location.href = returnUrl || '/';
+                    }, 1500);
+                } else {
+                    showError(result.message || '登录失败，请检查用户名和密码');
+                }
+            })
+            .catch(error => {
+                showLoading(false);
+                console.error('Login error:', error);
+                showError('网络连接失败，请稍后重试');
+            });
+        });
+        
+        // 显示/隐藏加载状态
+        function showLoading(show) {
+            const btn = document.querySelector('.btn-login');
+            const normalText = btn.querySelector('.normal-text');
+            const loadingText = btn.querySelector('.loading');
+            
+            if (show) {
+                btn.disabled = true;
+                normalText.style.display = 'none';
+                loadingText.style.display = 'inline';
+            } else {
+                btn.disabled = false;
+                normalText.style.display = 'inline';
+                loadingText.style.display = 'none';
+            }
+        }
+        
+        // 显示错误信息
+        function showError(message) {
+            const errorAlert = document.getElementById('errorAlert');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            errorMessage.textContent = message;
+            errorAlert.style.display = 'block';
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                errorAlert.style.display = 'none';
+            }, 5000);
+        }
+        
+        // 显示成功信息
+        function showSuccess(message) {
+            const successAlert = document.getElementById('successAlert');
+            const successMessage = document.getElementById('successMessage');
+            
+            successMessage.textContent = message;
+            successAlert.style.display = 'block';
+        }
+        
+        // 隐藏所有提示
+        function hideAlerts() {
+            document.getElementById('errorAlert').style.display = 'none';
+            document.getElementById('successAlert').style.display = 'none';
+        }
+        
+        // 忘记密码功能
+        function showForgotPassword() {
+            alert('忘记密码功能暂未实现，请联系管理员重置密码。');
+        }
+        
+        // 页面加载完成后的处理
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查是否已经登录
+            const userInfo = localStorage.getItem('userInfo');
+            if (userInfo) {
+                const returnUrl = new URLSearchParams(window.location.search).get('returnUrl');
+                if (confirm('您已经登录，是否直接跳转到首页？')) {
+                    window.location.href = returnUrl || '/';
+                }
+            }
+            
+            // 自动聚焦到用户名输入框
+            document.getElementById('username').focus();
+        });
+        
+        // 回车键快捷登录
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const form = document.getElementById('loginForm');
+                if (form.checkValidity()) {
+                    form.dispatchEvent(new Event('submit'));
+                }
+            }
+        });
+    </script>
+</body>
+</html>

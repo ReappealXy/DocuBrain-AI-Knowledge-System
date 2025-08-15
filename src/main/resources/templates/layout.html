@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title} ?: 'DocuBrain - 智能知识库'">DocuBrain - 智能知识库</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        .navbar-brand {
+            font-weight: bold;
+            color: #007bff !important;
+        }
+        .sidebar {
+            min-height: calc(100vh - 56px);
+            background-color: #f8f9fa;
+        }
+        .main-content {
+            min-height: calc(100vh - 56px);
+        }
+        .upload-area {
+            border: 2px dashed #007bff;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            background-color: #f8f9fa;
+        }
+        .upload-area.dragover {
+            background-color: #e3f2fd;
+            border-color: #1976d2;
+        }
+        .chat-container {
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px;
+        }
+        .message {
+            margin-bottom: 15px;
+        }
+        .message.user {
+            text-align: right;
+        }
+        .message.assistant {
+            text-align: left;
+        }
+        .message-content {
+            display: inline-block;
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 15px;
+        }
+        .message.user .message-content {
+            background-color: #007bff;
+            color: white;
+        }
+        .message.assistant .message-content {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-brain me-2"></i>DocuBrain
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="fas fa-home me-1"></i>首页
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/upload">
+                            <i class="fas fa-upload me-1"></i>上传文档
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/chat">
+                            <i class="fas fa-comments me-1"></i>智能问答
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>用户
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/login">登录</a></li>
+                            <li><a class="dropdown-item" href="/register">注册</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/logout">退出</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 侧边栏 (可选) -->
+            <div th:if="${showSidebar}" class="col-md-3 col-lg-2 sidebar p-3">
+                <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+            </div>
+            
+            <!-- 主内容区 -->
+            <div th:class="${showSidebar} ? 'col-md-9 col-lg-10' : 'col-12'" class="main-content p-4">
+                <!-- 面包屑导航 -->
+                <nav th:if="${breadcrumbs}" aria-label="breadcrumb" class="mb-4">
+                    <ol class="breadcrumb">
+                        <li th:each="crumb : ${breadcrumbs}" 
+                            th:class="${crumbStat.last} ? 'breadcrumb-item active' : 'breadcrumb-item'">
+                            <a th:if="${!crumbStat.last}" th:href="${crumb?.url ?: '#'}" th:text="${crumb?.name ?: '未知页面'}"></a>
+                            <span th:if="${crumbStat.last}" th:text="${crumb?.name ?: '当前页面'}"></span>
+                        </li>
+                    </ol>
+                </nav>
+
+                <!-- 页面标题 -->
+                <div th:if="${pageTitle}" class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 th:text="${pageTitle}">页面标题</h2>
+                    <div th:if="${pageActions}" th:utext="${pageActions}"></div>
+                </div>
+
+                <!-- 消息提示 -->
+                <div th:if="${message}" class="alert alert-info alert-dismissible fade show" role="alert">
+                    <span th:text="${message}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <span th:text="${error}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- 页面内容 -->
+                <div th:replace="~{${template} :: content}"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- 自定义 JavaScript -->
+    <script>
+        // 通用工具函数
+        const DocuBrain = {
+            // 显示消息
+            showMessage: function(message, type = 'info') {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+                alertDiv.innerHTML = `
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.querySelector('.main-content').insertBefore(alertDiv, document.querySelector('.main-content').firstChild);
+            },
+            
+            // AJAX 请求封装
+            request: function(url, options = {}) {
+                const defaultOptions = {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                };
+                
+                return fetch(url, { ...defaultOptions, ...options })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .catch(error => {
+                        console.error('Request failed:', error);
+                        this.showMessage('请求失败: ' + error.message, 'danger');
+                        throw error;
+                    });
+            }
+        };
+    </script>
+    
+    <!-- 页面特定的 JavaScript -->
+    <div th:replace="~{${template} :: scripts}"></div>
+</body>
+</html>

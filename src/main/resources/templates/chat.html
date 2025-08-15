@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能问答 - DocuBrain</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        .navbar-brand {
+            font-weight: bold;
+            color: #007bff !important;
+        }
+        .chat-container {
+            height: 600px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 15px;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .message {
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease-in;
+        }
+        .message.user {
+            text-align: right;
+        }
+        .message.assistant {
+            text-align: left;
+        }
+        .message-content {
+            display: inline-block;
+            max-width: 75%;
+            padding: 12px 18px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            line-height: 1.4;
+        }
+        .message.user .message-content {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+        .message.assistant .message-content {
+            background-color: white;
+            border: 1px solid #dee2e6;
+            color: #333;
+            border-bottom-left-radius: 5px;
+        }
+        .message-time {
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        .typing-indicator {
+            display: none;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        .typing-indicator .message-content {
+            background-color: white;
+            border: 1px solid #dee2e6;
+            padding: 12px 18px;
+        }
+        .typing-dots {
+            display: inline-block;
+        }
+        .typing-dots span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #007bff;
+            margin: 0 2px;
+            animation: typing 1.4s infinite;
+        }
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .input-group {
+            border-radius: 25px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-control {
+            border: none;
+            padding: 15px 20px;
+            font-size: 16px;
+        }
+        .form-control:focus {
+            box-shadow: none;
+        }
+        .btn-send {
+            border: none;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            padding: 15px 25px;
+            transition: all 0.3s ease;
+        }
+        .btn-send:hover {
+            background: linear-gradient(135deg, #0056b3, #004085);
+            transform: translateY(-1px);
+        }
+        .btn-send:disabled {
+            background: #6c757d;
+            transform: none;
+        }
+        .knowledge-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+        }
+        .quick-questions {
+            background-color: white;
+            border-radius: 15px;
+            border: 1px solid #dee2e6;
+        }
+        .quick-question-btn {
+            border: 1px solid #007bff;
+            color: #007bff;
+            background-color: transparent;
+            border-radius: 20px;
+            padding: 8px 16px;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        .quick-question-btn:hover {
+            background-color: #007bff;
+            color: white;
+        }
+        .welcome-message {
+            text-align: center;
+            color: #6c757d;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-brain me-2"></i>DocuBrain
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/"><i class="fas fa-home me-1"></i>首页</a>
+                <a class="nav-link" href="/upload"><i class="fas fa-upload me-1"></i>上传文档</a>
+                <a class="nav-link active" href="/chat"><i class="fas fa-comments me-1"></i>智能问答</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <!-- 左侧：聊天界面 -->
+            <div class="col-lg-8">
+                <!-- 知识库选择 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-database me-2"></i>选择知识库</h5>
+                    </div>
+                    <div class="card-body">
+                        <select class="form-select" id="knowledgeBaseSelect" required>
+                            <option value="">请选择知识库...</option>
+                            <option th:each="kb : ${knowledgeBases}" 
+                                    th:value="${kb?.id ?: ''}" 
+                                    th:text="${kb?.name ?: '未命名知识库'}"
+                                    th:selected="${param.knowledgeBaseId != null and param.knowledgeBaseId[0] == kb?.id?.toString()}">知识库名称</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 聊天容器 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-robot me-2"></i>智能助手</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="chat-container" id="chatContainer">
+                            <!-- 欢迎消息 -->
+                            <div class="welcome-message" id="welcomeMessage">
+                                <i class="fas fa-robot fa-3x mb-3"></i>
+                                <h4>您好！我是DocuBrain智能助手</h4>
+                                <p>请先选择一个知识库，然后您可以向我提问任何相关问题</p>
+                                <p class="text-muted">我会基于您上传的文档内容为您提供准确的答案</p>
+                            </div>
+                            
+                            <!-- 消息列表 -->
+                            <div id="messageList"></div>
+                            
+                            <!-- 打字指示器 -->
+                            <div class="typing-indicator" id="typingIndicator">
+                                <div class="message-content">
+                                    <div class="typing-dots">
+                                        <span></span>
+                                        <span></span>
+                                        <span></span>
+                                    </div>
+                                    <span class="ms-2">AI正在思考...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <!-- 输入区域 -->
+                        <form id="chatForm">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="messageInput" 
+                                       placeholder="请输入您的问题..." disabled>
+                                <button class="btn btn-send" type="submit" id="sendBtn" disabled>
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：信息面板 -->
+            <div class="col-lg-4">
+                <!-- 知识库信息 -->
+                <div class="card knowledge-info mb-4" id="knowledgeInfo" style="display: none;">
+                    <div class="card-body text-center">
+                        <h5><i class="fas fa-database me-2"></i>当前知识库</h5>
+                        <h4 id="currentKnowledgeName">-</h4>
+                        <div class="row mt-3">
+                            <div class="col-6">
+                                <h3 id="documentCount">0</h3>
+                                <small>文档数量</small>
+                            </div>
+                            <div class="col-6">
+                                <h3 id="chatCount">0</h3>
+                                <small>问答次数</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 快速问题 -->
+                <div class="card quick-questions">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>快速问题</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="quickQuestions">
+                            <p class="text-muted text-center">选择知识库后显示建议问题</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 聊天历史 -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0"><i class="fas fa-history me-2"></i>聊天历史</h6>
+                            <button class="btn btn-sm btn-outline-secondary" id="clearHistoryBtn">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="chatHistory">
+                            <p class="text-muted text-center">暂无聊天记录</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        let currentKnowledgeBaseId = null;
+        let chatHistory = [];
+        
+        // 文档数量统计数据
+        const documentCounts = /*[[${documentCounts}]]*/ {};
+        
+        // DOM 元素
+        const knowledgeBaseSelect = document.getElementById('knowledgeBaseSelect');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const chatForm = document.getElementById('chatForm');
+        const chatContainer = document.getElementById('chatContainer');
+        const messageList = document.getElementById('messageList');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const welcomeMessage = document.getElementById('welcomeMessage');
+        const knowledgeInfo = document.getElementById('knowledgeInfo');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        
+        // 知识库选择变化
+        knowledgeBaseSelect.addEventListener('change', function() {
+            currentKnowledgeBaseId = this.value;
+            if (currentKnowledgeBaseId) {
+                enableChat();
+                updateKnowledgeInfo();
+                loadQuickQuestions();
+            } else {
+                disableChat();
+            }
+        });
+        
+        // 启用聊天
+        function enableChat() {
+            messageInput.disabled = false;
+            sendBtn.disabled = false;
+            messageInput.placeholder = '请输入您的问题...';
+            welcomeMessage.style.display = 'none';
+            knowledgeInfo.style.display = 'block';
+        }
+        
+        // 禁用聊天
+        function disableChat() {
+            messageInput.disabled = true;
+            sendBtn.disabled = true;
+            messageInput.placeholder = '请先选择知识库...';
+            welcomeMessage.style.display = 'block';
+            knowledgeInfo.style.display = 'none';
+        }
+        
+        // 更新知识库信息
+        function updateKnowledgeInfo() {
+            const selectedOption = knowledgeBaseSelect.options[knowledgeBaseSelect.selectedIndex];
+            document.getElementById('currentKnowledgeName').textContent = selectedOption.text;
+            
+            // 显示实际的文档数量
+            const docCount = documentCounts[currentKnowledgeBaseId] || 0;
+            document.getElementById('documentCount').textContent = docCount;
+            document.getElementById('chatCount').textContent = chatHistory.length;
+        }
+        
+        // 加载快速问题
+        function loadQuickQuestions() {
+            const quickQuestions = [
+                '这个文档主要讲了什么？',
+                '有哪些重要的概念？',
+                '能总结一下关键要点吗？',
+                '有什么实际应用案例？',
+                '相关的技术细节是什么？'
+            ];
+            
+            const container = document.getElementById('quickQuestions');
+            container.innerHTML = '';
+            
+            quickQuestions.forEach(question => {
+                const btn = document.createElement('button');
+                btn.className = 'btn quick-question-btn';
+                btn.textContent = question;
+                btn.onclick = () => {
+                    messageInput.value = question;
+                    sendMessage();
+                };
+                container.appendChild(btn);
+            });
+        }
+        
+        // 表单提交
+        chatForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            sendMessage();
+        });
+        
+        // 发送消息
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || !currentKnowledgeBaseId) return;
+            
+            // 添加用户消息
+            addMessage('user', message);
+            
+            // 清空输入框
+            messageInput.value = '';
+            
+            // 显示打字指示器
+            showTypingIndicator();
+            
+            // 禁用发送按钮
+            sendBtn.disabled = true;
+            messageInput.disabled = true;
+            
+            // 发送请求到后端
+            fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    knowledgeBaseId: currentKnowledgeBaseId,
+                    query: message
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideTypingIndicator();
+                
+                if (data.code === 200) {
+                    addMessage('assistant', data.data);
+                    addToChatHistory(message, data.data);
+                } else {
+                    addMessage('assistant', '抱歉，处理您的问题时出现了错误：' + (data.message || '未知错误'));
+                }
+            })
+            .catch(error => {
+                hideTypingIndicator();
+                addMessage('assistant', '抱歉，网络连接出现问题，请稍后重试。');
+                console.error('Error:', error);
+            })
+            .finally(() => {
+                // 重新启用发送按钮
+                sendBtn.disabled = false;
+                messageInput.disabled = false;
+                messageInput.focus();
+            });
+        }
+        
+        // 添加消息到聊天界面
+        function addMessage(sender, content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            
+            messageDiv.innerHTML = `
+                <div class="message-content">${content}</div>
+                <div class="message-time">${timeStr}</div>
+            `;
+            
+            messageList.appendChild(messageDiv);
+            scrollToBottom();
+        }
+        
+        // 显示打字指示器
+        function showTypingIndicator() {
+            typingIndicator.style.display = 'block';
+            scrollToBottom();
+        }
+        
+        // 隐藏打字指示器
+        function hideTypingIndicator() {
+            typingIndicator.style.display = 'none';
+        }
+        
+        // 滚动到底部
+        function scrollToBottom() {
+            setTimeout(() => {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, 100);
+        }
+        
+        // 添加到聊天历史
+        function addToChatHistory(question, answer) {
+            chatHistory.push({ question, answer, time: new Date() });
+            updateChatHistoryDisplay();
+            updateKnowledgeInfo();
+        }
+        
+        // 更新聊天历史显示
+        function updateChatHistoryDisplay() {
+            const container = document.getElementById('chatHistory');
+            
+            if (chatHistory.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center">暂无聊天记录</p>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            // 只显示最近5条记录
+            const recentHistory = chatHistory.slice(-5).reverse();
+            
+            recentHistory.forEach(item => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'mb-3 p-2 border-bottom';
+                historyItem.innerHTML = `
+                    <div class="small fw-bold text-primary mb-1">${item.question}</div>
+                    <div class="small text-muted">${item.answer.substring(0, 100)}${item.answer.length > 100 ? '...' : ''}</div>
+                    <div class="small text-muted mt-1">${item.time.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</div>
+                `;
+                historyItem.style.cursor = 'pointer';
+                historyItem.onclick = () => {
+                    messageInput.value = item.question;
+                    messageInput.focus();
+                };
+                container.appendChild(historyItem);
+            });
+        }
+        
+        // 清空聊天历史
+        clearHistoryBtn.addEventListener('click', function() {
+            if (confirm('确定要清空聊天历史吗？')) {
+                chatHistory = [];
+                messageList.innerHTML = '';
+                updateChatHistoryDisplay();
+                updateKnowledgeInfo();
+            }
+        });
+        
+        // 回车发送消息
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 如果URL中有knowledgeBaseId参数，自动选择
+            const urlParams = new URLSearchParams(window.location.search);
+            const kbId = urlParams.get('knowledgeBaseId');
+            if (kbId) {
+                knowledgeBaseSelect.value = kbId;
+                knowledgeBaseSelect.dispatchEvent(new Event('change'));
+            }
+        });
+    </script>
+</body>
+</html>
